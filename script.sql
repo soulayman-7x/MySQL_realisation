@@ -1,19 +1,21 @@
-create database blogDB character set utf8mb4 collate utf8mb4_general_ci;
+create database if not exists blogDB character set utf8mb4 collate utf8mb4_general_ci;
 use blogDB;
 
-create table user (
+create table if not exists user (
 	user_id INT auto_increment primary key,
     user_name varchar(45) not null,
 	user_email varchar(200) unique not null,
-    user_password varchar(255)
-);
+    user_password varchar(255) not null,
+    INDEX index_name (user_name),
+    INDEX index_email (user_email)
+) comment = 'Table to store blog users';
 
-create table category (
+create table if not exists category (
 	category_id INT auto_increment primary key,
     category_name varchar(45) not null
-);
+) comment = 'Table to store article categories';
 
-create table article (
+create table if not exists article (
 	article_id INT auto_increment primary key,
     article_title varchar(100) not null,
     article_content text not null,
@@ -22,22 +24,32 @@ create table article (
     user_id INT,    
     category_id INT,
     foreign key (user_id) references user(user_id) on delete cascade,
-    foreign key (category_id) references category(category_id) on delete set null
-);
+    foreign key (category_id) references category(category_id) on delete set null,
+    INDEX index_article (article_title)
+) comment = 'Table to store blog articles';
 
-create table comment (
+create table if not exists comment (
 	comment_id INT auto_increment primary key,
     comment_content text not null,
     comment_pub_date datetime default current_timestamp,
     user_id INT,
     article_id INT,
-    foreign key (user_id) references user(user_id),
-    foreign key (article_id) references article(article_id)
-);
+    foreign key (user_id) references user(user_id) on delete cascade -- if user is deleted, delete their comments
+    foreign key (article_id) references article(article_id) on delete cascade -- if article is deleted, delete its comments
+) comment = 'Table to store comments on articles';
 
-alter table user add INDEX index_email (user_email);
-alter table user add INDEX indes_name (user_name);
-alter table article add INDEX index_article (article_title);
+create table if not exists post_image (
+	image_id INT auto_increment primary key,
+    image_path 	varchar(255) not null -- Path to the image file,
+    article_id INT not null,
+	is_featured tinyint default 0,
+    foreign key (article_id) references article(article_id) on delete cascade on update cascade
+) comment = 'Table to store images of articles';
+
+
+-- ==========================================
+--   Entering experimental data 
+-- ==========================================
 
 insert INTO category (category_name) values ('Technology');
 INSERT INTO category (category_name) VALUES ('Programming');
@@ -60,5 +72,10 @@ insert into comment (comment_content, user_id, article_id) values
 ('Super article, merci !', 1, 1),
 ('Very clear explanation!', 2, 3),
 ('I love SQL too!', 3, 1);
+
+INSERT INTO post_image (image_path, article_id, is_featured) VALUES 
+('uploads/sql_intro.jpg', 1, 1),   -- Featured image (cover) for the first article
+('uploads/python_basics.png', 2, 1),    -- Featured image (cover) for the second article
+('uploads/sql_diagram.jpg', 1, 0); -- A regular image within the first article
 
 
